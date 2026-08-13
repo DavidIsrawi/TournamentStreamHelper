@@ -24,9 +24,7 @@ body {
   font-family: var(--font);
   font-weight: 700;
   background: transparent;
-  filter:
-    drop-shadow(0 3px 3px rgba(0, 0, 0, 0.7))
-    drop-shadow(0 0 10px rgba(21, 87, 255, 0.18));
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.72));
 }
 
 .anim_container_outer,
@@ -44,7 +42,7 @@ body {
   width: 610px;
   height: 2px;
   z-index: 2;
-  opacity: 0.8;
+  opacity: 0.55;
 }
 
 .signal-line::after {
@@ -55,7 +53,7 @@ body {
   height: 8px;
   transform: rotate(45deg);
   background: var(--octagon-green);
-  box-shadow: 0 0 10px var(--octagon-green);
+  box-shadow: 0 0 4px rgba(34, 245, 138, 0.85);
 }
 
 .signal-line-left {
@@ -91,7 +89,7 @@ body {
     rgba(255, 255, 255, 0.95),
     transparent
   );
-  box-shadow: 0 0 12px var(--octagon-cyan);
+  box-shadow: 0 0 6px rgba(46, 232, 245, 0.72);
 }
 
 .player.container {
@@ -104,9 +102,9 @@ body {
   gap: 8px;
   overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(25, 50, 116, 0.38), transparent 55%),
-    var(--octagon-panel);
-  border: 1px solid rgba(255, 255, 255, 0.13);
+    linear-gradient(180deg, rgba(24, 46, 105, 0.5), transparent 58%),
+    rgba(5, 10, 29, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   color: var(--octagon-white);
 }
 
@@ -115,7 +113,7 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.25;
+  opacity: 0.1;
   background:
     repeating-linear-gradient(
       125deg,
@@ -132,8 +130,8 @@ body {
   clip-path: polygon(0 0, 95% 0, 100% 50%, 95% 100%, 0 100%);
   border-top: 2px solid var(--octagon-magenta);
   box-shadow:
-    inset 0 0 22px rgba(239, 62, 211, 0.13),
-    0 0 12px rgba(239, 62, 211, 0.2);
+    inset 0 -3px 0 rgba(239, 62, 211, 0.08),
+    0 4px 8px rgba(0, 0, 0, 0.42);
 }
 
 .p2.player.container {
@@ -143,14 +141,14 @@ body {
   clip-path: polygon(5% 0, 100% 0, 100% 100%, 5% 100%, 0 50%);
   border-top: 2px solid var(--octagon-cyan);
   box-shadow:
-    inset 0 0 22px rgba(46, 232, 245, 0.13),
-    0 0 12px rgba(46, 232, 245, 0.2);
+    inset 0 -3px 0 rgba(46, 232, 245, 0.08),
+    0 4px 8px rgba(0, 0, 0, 0.42);
 }
 
 .player-edge {
   position: absolute;
   top: 12px;
-  width: 4px;
+  width: 3px;
   height: 50px;
   transform: skewX(-20deg);
 }
@@ -158,13 +156,11 @@ body {
 .p1 .player-edge {
   right: 13px;
   background: var(--octagon-magenta);
-  box-shadow: 0 0 10px var(--octagon-magenta);
 }
 
 .p2 .player-edge {
   left: 13px;
   background: var(--octagon-cyan);
-  box-shadow: 0 0 10px var(--octagon-cyan);
 }
 
 .player.container > div:not(.player-edge) {
@@ -277,7 +273,7 @@ body {
     linear-gradient(145deg, rgba(255, 255, 255, 0.18), transparent 50%),
     linear-gradient(135deg, #b2199d, var(--octagon-magenta));
   clip-path: polygon(0 0, 84% 0, 100% 25%, 100% 100%, 0 100%);
-  box-shadow: inset 0 0 16px rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .p2 .score {
@@ -287,7 +283,7 @@ body {
     linear-gradient(225deg, #168bc4, var(--octagon-cyan));
   clip-path: polygon(16% 0, 100% 0, 100% 100%, 0 100%, 0 25%);
   color: var(--octagon-black);
-  box-shadow: inset 0 0 16px rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
 }
 
 .chips {
@@ -298,17 +294,25 @@ body {
   display: flex;
   gap: 5px;
   overflow: hidden;
+  padding: 0 18px;
+  background: rgba(5, 10, 29, 0.94);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.34);
 }
 
 .p1.chips {
   left: 314px;
   justify-content: flex-end;
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 100%, 0 100%);
+  border-bottom: 2px solid rgba(239, 62, 211, 0.62);
 }
 
 .p2.chips {
   right: 314px;
   justify-content: flex-end;
   flex-direction: row-reverse;
+  clip-path: polygon(18px 0, 100% 0, 100% 100%, 0 100%);
+  border-bottom: 2px solid rgba(46, 232, 245, 0.62);
 }
 
 .chip {
@@ -317,12 +321,11 @@ body {
   min-width: 0;
   overflow: hidden;
   color: rgba(247, 251, 255, 0.9);
-  background: rgba(5, 10, 29, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  border: 0;
   font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.35px;
-  clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
 }
 
 .chip > .text:not(.text_empty) {
@@ -335,11 +338,11 @@ body {
 }
 
 .p1 .chip {
-  border-bottom: 2px solid rgba(239, 62, 211, 0.7);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .p2 .chip {
-  border-bottom: 2px solid rgba(46, 232, 245, 0.7);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .flagcountry > .text,
@@ -384,10 +387,10 @@ body {
 .brand-halo {
   position: absolute;
   inset: 1px;
-  opacity: 0.65;
+  opacity: 0.3;
   background:
     radial-gradient(circle, rgba(21, 87, 255, 0.35), transparent 66%);
-  filter: blur(8px);
+  filter: blur(6px);
 }
 
 .brand-outline {
@@ -437,7 +440,7 @@ body {
   width: 27px;
   height: 3px;
   background: var(--octagon-green);
-  box-shadow: 0 0 8px var(--octagon-green);
+  box-shadow: 0 0 4px rgba(34, 245, 138, 0.8);
 }
 
 .brand-tick-left {
@@ -459,7 +462,7 @@ body {
   overflow: hidden;
   color: var(--octagon-white);
   background: var(--octagon-panel);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 .info_header {
@@ -484,7 +487,7 @@ body {
   flex: 0 0 5px;
   transform: rotate(45deg);
   background: var(--octagon-green);
-  box-shadow: 0 0 6px var(--octagon-green);
+  box-shadow: 0 0 3px rgba(34, 245, 138, 0.75);
 }
 
 .tournament_name,
