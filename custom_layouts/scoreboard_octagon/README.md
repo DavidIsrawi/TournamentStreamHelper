@@ -13,3 +13,6 @@ Its compact player bars, score-first hierarchy, centered event crest, and
 secondary round strip follow the clarity patterns used by major broadcasts such
 as Supernova, S Factor, Get On My Level, and Battle of BC without reproducing
 their artwork.
+
+Match and best-of context live in a separate left-side pill, keeping the central
+scoreboard shallow and preserving more vertical gameplay space.
