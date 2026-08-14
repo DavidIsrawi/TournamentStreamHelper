@@ -4,19 +4,17 @@
   let animationReady = false;
   let setTrackingReady = false;
   let lastSetId = null;
-  let pendingSetId = null;
+  let waitingForEntrants = false;
   let setTransitionInProgress = false;
-  let entranceAnimationFrame = null;
   let setTransitionGeneration = 0;
-  let queuedUpdateWrapper = null;
   let activeRenderContext = null;
   let updateQueue = Promise.resolve();
-  const renderedSetParts = new Set();
-  const requiredSetParts = new Set([
-    "p1-name",
-    "p1-score",
-    "p2-name",
-    "p2-score",
+  const renderedSetTargets = new Set();
+  const requiredSetTargets = new Set([
+    document.querySelector(".p1 .name"),
+    document.querySelector(".p1 .score"),
+    document.querySelector(".p2 .name"),
+    document.querySelector(".p2 .score"),
   ]);
 
   window.SetInnerHtml = (element, html, settings = {}) => {
@@ -24,7 +22,7 @@
     const skipContentFade =
       target?.classList.contains("score") ||
       setTransitionInProgress ||
-      activeRenderContext?.skipContentFade;
+      activeRenderContext?.setTransition;
     const update = skipContentFade
       ? setInnerHtmlImmediately(element, html, settings)
       : setInnerHtml(element, html, settings);
@@ -56,7 +54,7 @@
       settings.force !== true &&
       normalizeHtml(text.html()) === normalizeHtml(content)
     ) {
-      if (activeRenderContext?.trackRenderedSet) {
+      if (activeRenderContext?.setTransition) {
         gsap.killTweensOf(text);
         gsap.set(text, { autoAlpha: 1 });
       }
@@ -234,92 +232,70 @@
       ),
     );
 
-  // TSH publishes the set ID before its asynchronous player render finishes.
-  const getRenderedSetPart = (target) => {
-    if (
-      !target ||
-      (!target.classList.contains("name") &&
-        !target.classList.contains("score"))
-    ) {
-      return null;
-    }
-
-    const player = target.closest(".p1, .p2");
-    if (!player) {
-      return null;
-    }
-
-    const playerNumber = player.classList.contains("p1") ? "p1" : "p2";
-    const field = target.classList.contains("name") ? "name" : "score";
-    return `${playerNumber}-${field}`;
-  };
-
   function trackRenderedSetPart(target) {
-    const part = getRenderedSetPart(target);
-
-    if (!activeRenderContext?.trackRenderedSet || !part) {
+    if (
+      !activeRenderContext?.setTransition ||
+      !requiredSetTargets.has(target)
+    ) {
       return;
     }
 
-    activeRenderContext.renderedParts.add(part);
+    activeRenderContext.renderedTargets.add(target);
   }
 
   const hasRenderedSet = () =>
-    [...requiredSetParts].every((part) => renderedSetParts.has(part));
+    [...requiredSetTargets].every((target) =>
+      renderedSetTargets.has(target),
+    );
 
   const installUpdateQueue = () => {
     const updateWrapper = window.UpdateWrapper;
-    if (!queuedUpdateWrapper) {
-      queuedUpdateWrapper = (event) => {
-        const setId =
-          event.data?.score?.[window.scoreboardNumber]?.set_id ?? null;
-        const isSetTransition =
-          setTransitionInProgress ||
-          (pendingSetId !== null && pendingSetId === setId);
-        const context = {
-          generation: setTransitionGeneration,
-          setId,
-          skipContentFade: isSetTransition,
-          trackRenderedSet: isSetTransition,
-          renderedParts: new Set(),
-        };
+    const queuedUpdateWrapper = (event) => {
+      const setId =
+        event.data?.score?.[window.scoreboardNumber]?.set_id ?? null;
+      const context = {
+        generation: setTransitionGeneration,
+        setId,
+        setTransition:
+          setTransitionInProgress || waitingForEntrants,
+        renderedTargets: new Set(),
+      };
 
-        const renderUpdate = async () => {
-          activeRenderContext = context;
+      const renderUpdate = async () => {
+        activeRenderContext = context;
 
-          try {
-            await updateWrapper(event);
-          } catch (error) {
-            if (
-              context.generation === setTransitionGeneration &&
-              context.setId === lastSetId
-            ) {
-              cancelScheduledEntrance();
-              pendingSetId = context.setId;
-              setTransitionInProgress = false;
-            }
-            throw error;
-          } finally {
-            activeRenderContext = null;
-          }
-
+        try {
+          await updateWrapper(event);
+        } catch (error) {
           if (
             context.generation === setTransitionGeneration &&
             context.setId === lastSetId
           ) {
-            context.renderedParts.forEach((part) =>
-              renderedSetParts.add(part),
-            );
+            setTransitionGeneration += 1;
+            waitingForEntrants = context.setId !== null;
+            setTransitionInProgress = false;
           }
-        };
+          throw error;
+        } finally {
+          activeRenderContext = null;
+        }
 
-        const queuedUpdate = updateQueue.then(renderUpdate);
-        updateQueue = queuedUpdate.catch((error) => {
-          console.error("Octagon scoreboard update failed", error);
-        });
-        return queuedUpdate;
+        if (
+          context.generation === setTransitionGeneration &&
+          context.setId === lastSetId
+        ) {
+          context.renderedTargets.forEach((target) =>
+            renderedSetTargets.add(target),
+          );
+        }
       };
-    }
+
+      const queuedUpdate = updateQueue.then(renderUpdate);
+      updateQueue = queuedUpdate.catch((error) => {
+        console.error("Octagon scoreboard update failed", error);
+      });
+      return queuedUpdate;
+    };
 
     queueMicrotask(() => {
       document.removeEventListener("tsh_update", updateWrapper);
@@ -327,35 +303,23 @@
     });
   };
 
-  const cancelScheduledEntrance = () => {
-    if (entranceAnimationFrame !== null) {
-      window.cancelAnimationFrame(entranceAnimationFrame);
-      entranceAnimationFrame = null;
-    }
-  };
-
-  const scheduleTransitionEnd = (setId, replayEntrance) => {
-    cancelScheduledEntrance();
-
+  const scheduleTransitionEnd = (generation, replayEntrance) => {
     const finishTransition = () => {
-      if (lastSetId !== setId) {
+      if (generation !== setTransitionGeneration) {
         return;
       }
 
       if (replayEntrance && !hasRenderedSet()) {
-        entranceAnimationFrame =
-          window.requestAnimationFrame(finishTransition);
+        window.requestAnimationFrame(finishTransition);
         return;
       }
 
-      entranceAnimationFrame = window.requestAnimationFrame(() => {
-        entranceAnimationFrame = null;
+      window.requestAnimationFrame(() => {
+        if (generation !== setTransitionGeneration) {
+          return;
+        }
 
-        if (
-          replayEntrance &&
-          lastSetId === setId &&
-          typeof window.Start === "function"
-        ) {
+        if (replayEntrance && typeof window.Start === "function") {
           window.Start();
         }
 
@@ -363,8 +327,7 @@
       });
     };
 
-    entranceAnimationFrame =
-      window.requestAnimationFrame(finishTransition);
+    window.requestAnimationFrame(finishTransition);
   };
 
   document.addEventListener("tsh_update", (event) => {
@@ -378,41 +341,33 @@
     }
 
     if (currentSetId !== lastSetId) {
-      cancelScheduledEntrance();
       lastSetId = currentSetId;
-      pendingSetId = currentSetId;
+      waitingForEntrants =
+        currentSetId !== null && !hasLoadedEntrants(scoreboard);
       setTransitionInProgress = true;
       setTransitionGeneration += 1;
-      renderedSetParts.clear();
+      renderedSetTargets.clear();
 
-      if (currentSetId === null) {
-        pendingSetId = null;
-        scheduleTransitionEnd(null, false);
-      } else if (hasLoadedEntrants(scoreboard)) {
-        pendingSetId = null;
-        setTransitionGeneration += 1;
-        renderedSetParts.clear();
-        scheduleTransitionEnd(currentSetId, true);
-      } else {
-        scheduleTransitionEnd(currentSetId, false);
-      }
+      scheduleTransitionEnd(
+        setTransitionGeneration,
+        currentSetId !== null && !waitingForEntrants,
+      );
 
       return;
     }
 
     if (
-      pendingSetId === null ||
-      currentSetId !== pendingSetId ||
+      !waitingForEntrants ||
       !hasLoadedEntrants(scoreboard)
     ) {
       return;
     }
 
-    pendingSetId = null;
+    waitingForEntrants = false;
     setTransitionInProgress = true;
     setTransitionGeneration += 1;
-    renderedSetParts.clear();
-    scheduleTransitionEnd(currentSetId, true);
+    renderedSetTargets.clear();
+    scheduleTransitionEnd(setTransitionGeneration, true);
   });
 
   document.addEventListener("tsh_init", () => {
