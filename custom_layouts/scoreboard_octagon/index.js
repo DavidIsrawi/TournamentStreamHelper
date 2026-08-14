@@ -96,6 +96,55 @@
     );
   };
 
+  // The crest is 8-fold symmetric, so a 45deg step lands on an identical pose.
+  // The logo counter-rotates so the wordmark stays upright.
+  let wheelRotation = 0;
+
+  const spinWheel = (score) => {
+    const wheel = document.querySelector(".wheel");
+
+    if (!wheel) {
+      return;
+    }
+
+    const player = score.closest(".player");
+    const direction = player?.classList.contains("p1") ? -1 : 1;
+    wheelRotation += direction * 45;
+
+    const spin = {
+      duration: 0.62,
+      ease: "back.out(1.5)",
+      overwrite: true,
+      transformOrigin: "center center",
+    };
+
+    gsap.to(wheel, { rotate: wheelRotation, ...spin });
+    gsap.to(".logo", { rotate: -wheelRotation, ...spin });
+  };
+
+  // Long, friction-decayed turn of the helm for entrances: a hard shove that
+  // coasts down to rest. A full turn lands on the same 8-fold pose, and the
+  // shared wheelRotation accumulator keeps later score spins in sync.
+  const sailWheel = () => {
+    const wheel = document.querySelector(".wheel");
+
+    if (!wheel || reducedMotion.matches) {
+      return;
+    }
+
+    wheelRotation += 360;
+
+    const sail = {
+      duration: 2.4,
+      ease: "power3.out",
+      overwrite: true,
+      transformOrigin: "center center",
+    };
+
+    gsap.to(wheel, { rotate: wheelRotation, ...sail });
+    gsap.to(".logo", { rotate: -wheelRotation, ...sail });
+  };
+
   const animateTemporaryScoreEffect = (
     score,
     className,
@@ -116,11 +165,11 @@
     animateTemporaryScoreEffect(
       score,
       "score-ring",
-      { autoAlpha: 0.9, scale: 0.86 },
+      { autoAlpha: 0.95, scale: 0.88 },
       {
         autoAlpha: 0,
-        scale: 1.28,
-        duration: 0.48,
+        scale: 1.32,
+        duration: 0.5,
         ease: "power2.out",
       },
     );
@@ -223,6 +272,7 @@
     addBellRing(score);
     addFoamParticles(score);
     pulseWheelFitting(score);
+    spinWheel(score);
   };
 
   const hasLoadedEntrants = (scoreboard) =>
@@ -321,6 +371,7 @@
 
         if (replayEntrance && typeof window.Start === "function") {
           window.Start();
+          sailWheel();
         }
 
         setTransitionInProgress = false;
@@ -401,6 +452,8 @@
         ease: "power2.out",
       },
     );
+
+    sailWheel();
   });
 
   document.querySelectorAll(".score").forEach((score) => {
