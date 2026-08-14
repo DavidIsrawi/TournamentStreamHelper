@@ -195,10 +195,11 @@ body {
 
 .score-ring {
   position: absolute;
-  inset: -2px;
+  inset: 0;
   z-index: -1;
   pointer-events: none;
   border: 3px solid var(--brass);
+  border-radius: var(--frame-outer-radius);
 }
 
 .score-old {
