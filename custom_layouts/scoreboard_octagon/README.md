@@ -18,7 +18,11 @@ their artwork.
 Match and best-of context live in a separate captain's-log card, keeping the
 central scoreboard shallow and preserving more vertical gameplay space. Flat
 purple and teal score end caps share the player bars' silhouette, with a solid
-navy outline and high-contrast white numerals. Score changes use a brief ship-bell
-pulse, rolling numeral, brass fitting flash, and restrained particles, with a
+navy outline and high-contrast white numerals. Score changes use an expanding
+brass bell ring, rolling numeral, brass fitting flash, restrained particles, and
+a 45-degree turn of the central crest toward the scoring side — the wordmark
+counter-rotates so it stays upright. On load, and again whenever a new set is
+loaded, the crest takes a longer full-turn helm spin that coasts to a stop under
+simulated friction, landing back on its resting pose. All motion has a
 reduced-motion fallback. Loading a new set replays the full entrance after both
 entrants have rendered, while score-only updates retain the focused score effect.

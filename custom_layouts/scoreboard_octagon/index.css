@@ -196,7 +196,9 @@ body {
 .score-ring {
   position: absolute;
   inset: 0;
-  z-index: -1;
+  /* Above .score::after (0) and .score-old (3), or the ring expands behind an
+     opaque cap and is never seen. */
+  z-index: 7;
   pointer-events: none;
   border: 3px solid var(--brass);
   border-radius: var(--frame-outer-radius);
@@ -319,25 +321,13 @@ body {
     0 10px 10px rgba(0, 0, 0, 0.34);
 }
 
-.wheel::before,
-.wheel::after {
-  content: "";
-  position: absolute;
-  width: 143px;
-  height: 8px;
-  z-index: -1;
-  background: var(--brass);
-  border: 2px solid var(--deep);
-  border-radius: 7px;
-}
-
-.wheel::before {
-  transform: rotate(45deg);
-}
-
-.wheel::after {
-  transform: rotate(-45deg);
-}
+/*
+ * The crest's two diagonal spokes used to live here as .wheel::before/::after:
+ * 143x8px brass bars at z-index -1. They were never actually visible -- .wheel
+ * had no stacking context, so they painted behind its opaque fill. Animating the
+ * wheel gives it a transform, which *does* create a stacking context, trapping
+ * them inside and revealing them as two yellow lines across the crest. Removed.
+ */
 
 .wheel-bolt {
   --angle: calc(var(--i) * 45deg);
@@ -367,13 +357,21 @@ body {
   position: absolute;
   top: 191px;
   left: 50%;
-  width: 360px;
+  /* Hugs its content so the plate never looks half-empty, but holds the
+     original 360px so short names keep the resting silhouette, and stops at
+     560px before it would slide under the pronoun/seed caps above it. */
+  width: max-content;
+  min-width: 360px;
+  max-width: 560px;
   height: 35px;
   z-index: 10;
   display: flex;
   place-items: center;
   place-content: center;
   gap: 9px;
+  /* Keeps the text off the border so the plate reads as a set piece rather
+     than a label crammed into its own frame. */
+  padding-inline: 16px;
   overflow: hidden;
   color: var(--sand);
   background: var(--purple);
