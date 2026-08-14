@@ -7,39 +7,26 @@
     <link rel="stylesheet" href="./index.css" />
   </head>
   <body class="octagon">
-    <div class="signal-line signal-line-left fade"></div>
-    <div class="signal-line signal-line-right fade"></div>
-    <div class="signal-sweep"></div>
-
-    <div class="brand-rig fade">
-      <div class="brand-halo"></div>
-      <div class="brand-outline"></div>
-      <div class="logo-shell">
-        <div class="logo"></div>
-      </div>
-      <div class="brand-tick brand-tick-left"></div>
-      <div class="brand-tick brand-tick-right"></div>
-    </div>
-
-    <div class="info_header fade">
-      <div class="tournament_name"></div>
-      <div class="event_name"></div>
-    </div>
-
-    <div class="info container fade">
-      <div class="match"></div>
-      <div class="info-divider"></div>
-      <div class="phase"></div>
-    </div>
+    <svg class="log-tentacle fade" viewBox="0 0 194 66" fill="none" aria-hidden="true">
+      <path class="tentacle-outline" d="M34 2C18 19 26 43 58 47C92 51 104 24 130 24C158 24 171 49 150 56"></path>
+      <path class="tentacle-fill" d="M34 2C18 19 26 43 58 47C92 51 104 24 130 24C158 24 171 49 150 56"></path>
+      <g class="tentacle-suckers">
+        <circle cx="42" cy="40" r="2.5"></circle>
+        <circle cx="57" cy="47" r="2.5"></circle>
+        <circle cx="75" cy="46" r="2.5"></circle>
+        <circle cx="95" cy="37" r="2.5"></circle>
+        <circle cx="114" cy="27" r="2.5"></circle>
+        <circle cx="134" cy="25" r="2.5"></circle>
+      </g>
+    </svg>
 
     <div class="anim_container_outer">
       <div class="anim_container_inner">
         <div class="p1 player container fade_right">
-          <div class="player-edge"></div>
           <div class="icon avatar"></div>
           <div class="icon online_avatar"></div>
           <div class="sponsor_icon"></div>
-          <div class="name"></div>
+          <div class="name font-scale-fit"></div>
           <div class="character_container"></div>
           <div class="score"></div>
         </div>
@@ -53,11 +40,10 @@
         </div>
 
         <div class="p2 player container fade_left">
-          <div class="player-edge"></div>
           <div class="icon avatar"></div>
           <div class="icon online_avatar"></div>
           <div class="sponsor_icon"></div>
-          <div class="name"></div>
+          <div class="name font-scale-fit"></div>
           <div class="character_container"></div>
           <div class="score"></div>
         </div>
@@ -70,6 +56,34 @@
           <div class="flagcountry chip fade_right_stagger2"></div>
         </div>
       </div>
+    </div>
+
+    <div class="brand-rig fade">
+      <div class="wheel">
+        <i class="wheel-bolt" style="--i: 0"></i>
+        <i class="wheel-bolt" style="--i: 1"></i>
+        <i class="wheel-bolt" style="--i: 2"></i>
+        <i class="wheel-bolt" style="--i: 3"></i>
+        <i class="wheel-bolt" style="--i: 4"></i>
+        <i class="wheel-bolt" style="--i: 5"></i>
+        <i class="wheel-bolt" style="--i: 6"></i>
+        <i class="wheel-bolt" style="--i: 7"></i>
+        <div class="logo"></div>
+      </div>
+    </div>
+
+    <div class="info_header fade">
+      <div class="tournament_name font-scale-fit"></div>
+      <div class="event_name font-scale-fit"></div>
+    </div>
+
+    <div class="info container fade">
+      <svg class="anchor-icon" viewBox="0 0 64 72" aria-hidden="true">
+        <circle cx="32" cy="10" r="7"></circle>
+        <path d="M32 17v38M18 29h28M12 43c2 15 10 22 20 22s18-7 20-22M12 43l-7 9M12 43l10 2M52 43l7 9M52 43l-10 2"></path>
+      </svg>
+      <div class="match font-scale-fit"></div>
+      <div class="phase font-scale-fit"></div>
     </div>
 
     <script src="../scoreboard/index.js"></script>

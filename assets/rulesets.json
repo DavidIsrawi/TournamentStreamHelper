@@ -5178,5 +5178,22 @@
       }
     },
     "expand": []
+  },
+  {
+    "id": 211,
+    "videogameId": 28,
+    "name": "Blind Pick",
+    "description": null,
+    "isDefault": true,
+    "type": "standard",
+    "gameMode": 1,
+    "settings": {
+      "gameSetup": true,
+      "additionalFlags": {
+        "blindBeforeAll": true
+      }
+    },
+    "eventSettings": null,
+    "expand": []
   }
 ]
