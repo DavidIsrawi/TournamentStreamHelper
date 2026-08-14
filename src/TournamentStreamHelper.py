@@ -194,18 +194,20 @@ def DownloadLayoutsOnBoot():
     bundled_layouts_path = Path("./custom_layouts")
     if bundled_layouts_path.is_dir():
         for bundled_layout in bundled_layouts_path.iterdir():
-            destination = Path(layouts_path) / bundled_layout.name
-            if bundled_layout.is_dir():
-                if destination.is_symlink() or destination.is_file():
-                    destination.unlink()
-                elif destination.is_dir():
-                    shutil.rmtree(destination)
+            if not bundled_layout.is_dir():
+                continue
 
-                shutil.copytree(
-                    bundled_layout,
-                    destination,
-                    symlinks=True
-                )
+            destination = Path(layouts_path) / bundled_layout.name
+            if destination.is_dir() and not destination.is_symlink():
+                shutil.rmtree(destination)
+            else:
+                destination.unlink(missing_ok=True)
+
+            shutil.copytree(
+                bundled_layout,
+                destination,
+                symlinks=True
+            )
 
 def generate_restart_messagebox(main_txt):
     messagebox = QMessageBox()

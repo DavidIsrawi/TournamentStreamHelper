@@ -36,6 +36,8 @@ body {
 }
 
 .player.container {
+  --frame-outer-radius: 10px 28px;
+  --frame-inner-radius: 5px 22px;
   position: absolute;
   top: 59px;
   width: 548px;
@@ -48,32 +50,40 @@ body {
   background: transparent;
 }
 
-.player.container::after {
+.player.container::after,
+.score::after {
   content: "";
   position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   background: var(--deep);
-  border-radius: 10px 28px;
+  border-radius: var(--frame-outer-radius);
+}
+
+.player.container::after {
   filter:
     drop-shadow(0 4px 0 rgba(32, 41, 66, 0.55))
     drop-shadow(0 10px 9px rgba(0, 0, 0, 0.28));
 }
 
-.player.container::before {
+.player.container::before,
+.score::before {
   content: "";
   position: absolute;
   inset: 6px;
   z-index: 1;
   pointer-events: none;
+  border-radius: var(--frame-inner-radius);
+}
+
+.player.container::before {
   background:
     radial-gradient(circle at 20% 35%, rgba(255, 255, 255, 0.22) 0 1.5px, transparent 2.1px),
     radial-gradient(circle at 74% 68%, rgba(32, 41, 66, 0.07) 0 1.5px, transparent 2.2px),
     repeating-linear-gradient(8deg, transparent 0 8px, rgba(32, 41, 66, 0.025) 8px 9px),
     linear-gradient(180deg, var(--sand-light) 0%, var(--sand) 56%, var(--sand-dark) 100%);
   background-size: 29px 26px, 35px 32px, auto, auto;
-  border-radius: 5px 22px;
 }
 
 .p1.player.container {
@@ -82,23 +92,11 @@ body {
 }
 
 .p2.player.container {
+  --frame-outer-radius: 28px 10px;
+  --frame-inner-radius: 22px 5px;
   right: 354px;
   padding: 0 24px 0 104px;
   flex-direction: row-reverse;
-}
-
-.p2.player.container::after {
-  border-radius: 28px 10px;
-}
-
-.p2.player.container::before {
-  border-radius: 22px 5px;
-}
-
-.icon,
-.sponsor_icon,
-.character_container {
-  display: none;
 }
 
 .player.container > div {
@@ -171,25 +169,8 @@ body {
   transform-origin: center;
 }
 
-.score::after,
 .score::before {
-  content: "";
-  position: absolute;
-  z-index: 0;
-  pointer-events: none;
-}
-
-.score::after {
-  inset: 0;
-  background: var(--deep);
-  border-radius: 10px 28px;
-}
-
-.score::before {
-  inset: 6px;
-  z-index: 1;
   background: var(--purple);
-  border-radius: 5px 22px;
 }
 
 .p1 .score {
@@ -200,13 +181,8 @@ body {
   left: 0;
 }
 
-.p2 .score::after {
-  border-radius: 28px 10px;
-}
-
 .p2 .score::before {
   background: var(--score-teal);
-  border-radius: 22px 5px;
 }
 
 .score > .text {
