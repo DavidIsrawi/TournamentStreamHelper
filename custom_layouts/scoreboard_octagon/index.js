@@ -18,28 +18,30 @@
 
   window.SetInnerHtml = (element, html, settings = {}) => {
     const target = element?.get?.(0) ?? element?.[0];
-    let update;
-
-    if (!target?.classList.contains("score")) {
-      update = setInnerHtml(element, html, settings);
-    } else {
-      update = setInnerHtml(element, html, {
-        ...settings,
-        fadeTime: 0,
-        anim_in: {
-          ...settings.anim_in,
-          autoAlpha: 1,
-          duration: 0,
-          stagger: 0,
-        },
-        anim_out: {
-          ...settings.anim_out,
-          autoAlpha: 1,
-          duration: 0,
-          stagger: 0,
-        },
-      });
-    }
+    const skipContentFade =
+      target?.classList.contains("score") || setTransitionInProgress;
+    const update = setInnerHtml(
+      element,
+      html,
+      skipContentFade
+        ? {
+            ...settings,
+            fadeTime: 0,
+            anim_in: {
+              ...settings.anim_in,
+              autoAlpha: 1,
+              duration: 0,
+              stagger: 0,
+            },
+            anim_out: {
+              ...settings.anim_out,
+              autoAlpha: 1,
+              duration: 0,
+              stagger: 0,
+            },
+          }
+        : settings,
+    );
 
     trackRenderedSetPart(target, update);
     return update;
