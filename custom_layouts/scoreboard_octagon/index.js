@@ -8,6 +8,9 @@
   let setTransitionInProgress = false;
   let entranceAnimationFrame = null;
   let setTransitionGeneration = 0;
+  let queuedUpdateWrapper = null;
+  let activeRenderContext = null;
+  let updateQueue = Promise.resolve();
   const renderedSetParts = new Set();
   const requiredSetParts = new Set([
     "p1-name",
@@ -19,33 +22,59 @@
   window.SetInnerHtml = (element, html, settings = {}) => {
     const target = element?.get?.(0) ?? element?.[0];
     const skipContentFade =
-      target?.classList.contains("score") || setTransitionInProgress;
-    const update = setInnerHtml(
-      element,
-      html,
-      skipContentFade
-        ? {
-            ...settings,
-            fadeTime: 0,
-            anim_in: {
-              ...settings.anim_in,
-              autoAlpha: 1,
-              duration: 0,
-              stagger: 0,
-            },
-            anim_out: {
-              ...settings.anim_out,
-              autoAlpha: 1,
-              duration: 0,
-              stagger: 0,
-            },
-          }
-        : settings,
-    );
+      target?.classList.contains("score") ||
+      setTransitionInProgress ||
+      activeRenderContext?.skipContentFade;
+    const update = skipContentFade
+      ? setInnerHtmlImmediately(element, html, settings)
+      : setInnerHtml(element, html, settings);
 
-    trackRenderedSetPart(target, update);
+    trackRenderedSetPart(target);
     return update;
   };
+
+  function setInnerHtmlImmediately(element, html, settings) {
+    if (element == null || settings.force === false) {
+      return Promise.resolve();
+    }
+
+    const content = String(html ?? "");
+    let text = element.find(".text");
+
+    if (text.length === 0) {
+      element.html("<div class='text'></div>");
+      text = element.find(".text");
+    }
+
+    const normalizeHtml = (value) => {
+      const container = document.createElement("div");
+      container.innerHTML = String(value);
+      return container.innerHTML;
+    };
+
+    if (
+      settings.force !== true &&
+      normalizeHtml(text.html()) === normalizeHtml(content)
+    ) {
+      if (activeRenderContext?.trackRenderedSet) {
+        gsap.killTweensOf(text);
+        gsap.set(text, { autoAlpha: 1 });
+      }
+      return Promise.resolve();
+    }
+
+    gsap.killTweensOf(text);
+    text.html(content);
+
+    const isEmpty = content.trim().length === 0;
+    text.toggleClass("text_empty", isEmpty);
+    element.toggleClass("text_empty", isEmpty);
+    FitText(element);
+    settings.middleFunction?.();
+    gsap.set(text, { autoAlpha: 1 });
+
+    return Promise.resolve();
+  }
 
   const pulseWheelFitting = (score) => {
     const player = score.closest(".player");
@@ -217,26 +246,78 @@
     return `${playerNumber}-${field}`;
   };
 
-  function trackRenderedSetPart(target, update) {
+  function trackRenderedSetPart(target) {
     const part = getRenderedSetPart(target);
 
-    if (!setTransitionInProgress || !part) {
+    if (!activeRenderContext?.trackRenderedSet || !part) {
       return;
     }
 
-    const generation = setTransitionGeneration;
-    Promise.resolve(update).then(() => {
-      if (
-        setTransitionInProgress &&
-        generation === setTransitionGeneration
-      ) {
-        renderedSetParts.add(part);
-      }
-    });
+    activeRenderContext.renderedParts.add(part);
   }
 
   const hasRenderedSet = () =>
     [...requiredSetParts].every((part) => renderedSetParts.has(part));
+
+  const installUpdateQueue = () => {
+    const updateWrapper = window.UpdateWrapper;
+    if (!queuedUpdateWrapper) {
+      queuedUpdateWrapper = (event) => {
+        const setId =
+          event.data?.score?.[window.scoreboardNumber]?.set_id ?? null;
+        const isSetTransition =
+          setTransitionInProgress ||
+          (pendingSetId !== null && pendingSetId === setId);
+        const context = {
+          generation: setTransitionGeneration,
+          setId,
+          skipContentFade: isSetTransition,
+          trackRenderedSet: isSetTransition,
+          renderedParts: new Set(),
+        };
+
+        const renderUpdate = async () => {
+          activeRenderContext = context;
+
+          try {
+            await updateWrapper(event);
+          } catch (error) {
+            if (
+              context.generation === setTransitionGeneration &&
+              context.setId === lastSetId
+            ) {
+              cancelScheduledEntrance();
+              pendingSetId = context.setId;
+              setTransitionInProgress = false;
+            }
+            throw error;
+          } finally {
+            activeRenderContext = null;
+          }
+
+          if (
+            context.generation === setTransitionGeneration &&
+            context.setId === lastSetId
+          ) {
+            context.renderedParts.forEach((part) =>
+              renderedSetParts.add(part),
+            );
+          }
+        };
+
+        const queuedUpdate = updateQueue.then(renderUpdate);
+        updateQueue = queuedUpdate.catch((error) => {
+          console.error("Octagon scoreboard update failed", error);
+        });
+        return queuedUpdate;
+      };
+    }
+
+    queueMicrotask(() => {
+      document.removeEventListener("tsh_update", updateWrapper);
+      document.addEventListener("tsh_update", queuedUpdateWrapper);
+    });
+  };
 
   const cancelScheduledEntrance = () => {
     if (entranceAnimationFrame !== null) {
@@ -299,6 +380,13 @@
       if (currentSetId === null) {
         pendingSetId = null;
         scheduleTransitionEnd(null, false);
+      } else if (hasLoadedEntrants(scoreboard)) {
+        pendingSetId = null;
+        setTransitionGeneration += 1;
+        renderedSetParts.clear();
+        scheduleTransitionEnd(currentSetId, true);
+      } else {
+        scheduleTransitionEnd(currentSetId, false);
       }
 
       return;
@@ -313,12 +401,14 @@
     }
 
     pendingSetId = null;
+    setTransitionInProgress = true;
     setTransitionGeneration += 1;
     renderedSetParts.clear();
     scheduleTransitionEnd(currentSetId, true);
   });
 
   document.addEventListener("tsh_init", () => {
+    installUpdateQueue();
     animationReady = true;
 
     if (reducedMotion.matches) {
