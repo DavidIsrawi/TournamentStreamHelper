@@ -2,30 +2,47 @@
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const setInnerHtml = window.SetInnerHtml;
   let animationReady = false;
+  let setTrackingReady = false;
+  let lastSetId = null;
+  let pendingSetId = null;
+  let setTransitionInProgress = false;
+  let entranceAnimationFrame = null;
+  let setTransitionGeneration = 0;
+  const renderedSetParts = new Set();
+  const requiredSetParts = new Set([
+    "p1-name",
+    "p1-score",
+    "p2-name",
+    "p2-score",
+  ]);
 
   window.SetInnerHtml = (element, html, settings = {}) => {
     const target = element?.get?.(0) ?? element?.[0];
+    let update;
 
     if (!target?.classList.contains("score")) {
-      return setInnerHtml(element, html, settings);
+      update = setInnerHtml(element, html, settings);
+    } else {
+      update = setInnerHtml(element, html, {
+        ...settings,
+        fadeTime: 0,
+        anim_in: {
+          ...settings.anim_in,
+          autoAlpha: 1,
+          duration: 0,
+          stagger: 0,
+        },
+        anim_out: {
+          ...settings.anim_out,
+          autoAlpha: 1,
+          duration: 0,
+          stagger: 0,
+        },
+      });
     }
 
-    return setInnerHtml(element, html, {
-      ...settings,
-      fadeTime: 0,
-      anim_in: {
-        ...settings.anim_in,
-        autoAlpha: 1,
-        duration: 0,
-        stagger: 0,
-      },
-      anim_out: {
-        ...settings.anim_out,
-        autoAlpha: 1,
-        duration: 0,
-        stagger: 0,
-      },
-    });
+    trackRenderedSetPart(target, update);
+    return update;
   };
 
   const pulseWheelFitting = (score) => {
@@ -171,6 +188,134 @@
     pulseWheelFitting(score);
   };
 
+  const hasLoadedEntrants = (scoreboard) =>
+    ["1", "2"].every((teamNumber) =>
+      Object.values(scoreboard?.team?.[teamNumber]?.player ?? {}).some(
+        (player) => String(player?.name ?? "").trim(),
+      ),
+    );
+
+  // TSH publishes the set ID before its asynchronous player render finishes.
+  const getRenderedSetPart = (target) => {
+    if (
+      !target ||
+      (!target.classList.contains("name") &&
+        !target.classList.contains("score"))
+    ) {
+      return null;
+    }
+
+    const player = target.closest(".p1, .p2");
+    if (!player) {
+      return null;
+    }
+
+    const playerNumber = player.classList.contains("p1") ? "p1" : "p2";
+    const field = target.classList.contains("name") ? "name" : "score";
+    return `${playerNumber}-${field}`;
+  };
+
+  function trackRenderedSetPart(target, update) {
+    const part = getRenderedSetPart(target);
+
+    if (!setTransitionInProgress || !part) {
+      return;
+    }
+
+    const generation = setTransitionGeneration;
+    Promise.resolve(update).then(() => {
+      if (
+        setTransitionInProgress &&
+        generation === setTransitionGeneration
+      ) {
+        renderedSetParts.add(part);
+      }
+    });
+  }
+
+  const hasRenderedSet = () =>
+    [...requiredSetParts].every((part) => renderedSetParts.has(part));
+
+  const cancelScheduledEntrance = () => {
+    if (entranceAnimationFrame !== null) {
+      window.cancelAnimationFrame(entranceAnimationFrame);
+      entranceAnimationFrame = null;
+    }
+  };
+
+  const scheduleTransitionEnd = (setId, replayEntrance) => {
+    cancelScheduledEntrance();
+
+    const finishTransition = () => {
+      if (lastSetId !== setId) {
+        return;
+      }
+
+      if (replayEntrance && !hasRenderedSet()) {
+        entranceAnimationFrame =
+          window.requestAnimationFrame(finishTransition);
+        return;
+      }
+
+      entranceAnimationFrame = window.requestAnimationFrame(() => {
+        entranceAnimationFrame = null;
+
+        if (
+          replayEntrance &&
+          lastSetId === setId &&
+          typeof window.Start === "function"
+        ) {
+          window.Start();
+        }
+
+        setTransitionInProgress = false;
+      });
+    };
+
+    entranceAnimationFrame =
+      window.requestAnimationFrame(finishTransition);
+  };
+
+  document.addEventListener("tsh_update", (event) => {
+    const scoreboard = event.data?.score?.[window.scoreboardNumber];
+    const currentSetId = scoreboard?.set_id ?? null;
+
+    if (!setTrackingReady) {
+      lastSetId = currentSetId;
+      setTrackingReady = true;
+      return;
+    }
+
+    if (currentSetId !== lastSetId) {
+      cancelScheduledEntrance();
+      lastSetId = currentSetId;
+      pendingSetId = currentSetId;
+      setTransitionInProgress = true;
+      setTransitionGeneration += 1;
+      renderedSetParts.clear();
+
+      if (currentSetId === null) {
+        pendingSetId = null;
+        scheduleTransitionEnd(null, false);
+      }
+
+      return;
+    }
+
+    if (
+      pendingSetId === null ||
+      currentSetId !== pendingSetId ||
+      !hasLoadedEntrants(scoreboard)
+    ) {
+      return;
+    }
+
+    pendingSetId = null;
+    setTransitionGeneration += 1;
+    renderedSetParts.clear();
+    scheduleTransitionEnd(currentSetId, true);
+  });
+
   document.addEventListener("tsh_init", () => {
     animationReady = true;
 
@@ -215,7 +360,11 @@
         return;
       }
 
-      if (animationReady && previousValue !== null) {
+      if (
+        animationReady &&
+        previousValue !== null &&
+        !setTransitionInProgress
+      ) {
         animateScoreChange(score, previousValue);
       }
 
