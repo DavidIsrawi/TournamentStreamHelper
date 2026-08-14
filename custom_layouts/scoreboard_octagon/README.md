@@ -20,4 +20,5 @@ central scoreboard shallow and preserving more vertical gameplay space. Flat
 purple and teal score end caps share the player bars' silhouette, with a solid
 navy outline and high-contrast white numerals. Score changes use a brief ship-bell
 pulse, rolling numeral, brass fitting flash, and restrained particles, with a
-reduced-motion fallback.
+reduced-motion fallback. Loading a new set replays the full entrance after both
+entrants have rendered, while score-only updates retain the focused score effect.
