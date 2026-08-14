@@ -98,32 +98,41 @@
     );
   };
 
-  const addBellRing = (score) => {
-    const ring = document.createElement("span");
-    ring.className = "score-ring";
-    score.append(ring);
+  const animateTemporaryScoreEffect = (
+    score,
+    className,
+    fromVars,
+    toVars,
+  ) => {
+    const effect = document.createElement("span");
+    effect.className = className;
+    score.append(effect);
 
-    gsap.fromTo(
-      ring,
+    gsap.fromTo(effect, fromVars, {
+      ...toVars,
+      onComplete: () => effect.remove(),
+    });
+  };
+
+  const addBellRing = (score) => {
+    animateTemporaryScoreEffect(
+      score,
+      "score-ring",
       { autoAlpha: 0.9, scale: 0.86 },
       {
         autoAlpha: 0,
         scale: 1.28,
         duration: 0.48,
         ease: "power2.out",
-        onComplete: () => ring.remove(),
       },
     );
   };
 
   const addFoamParticles = (score) => {
     [-1, 1].forEach((direction, index) => {
-      const particle = document.createElement("span");
-      particle.className = "score-particle";
-      score.append(particle);
-
-      gsap.fromTo(
-        particle,
+      animateTemporaryScoreEffect(
+        score,
+        "score-particle",
         { autoAlpha: 0.9, scale: 0.65, xPercent: -50, yPercent: -50 },
         {
           autoAlpha: 0,
@@ -133,7 +142,6 @@
           duration: 0.42,
           delay: index * 0.025,
           ease: "power2.out",
-          onComplete: () => particle.remove(),
         },
       );
     });
