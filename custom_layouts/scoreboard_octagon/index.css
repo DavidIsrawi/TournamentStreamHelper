@@ -5,9 +5,30 @@
   --sand-dark: #eac88e;
   --purple: #68458f;
   --teal: #185f64;
-  --score-teal: #287f7d;
   --brass: #e3ad4f;
   --white: #ffffff;
+
+  /* Score caps only. --purple is 86% darker than the old --score-teal, so p1
+     read heavier than p2 for no reason. These two are luminance-matched
+     (~0.13) so the sides balance and both hold white at ~5.8:1. */
+  --score-purple: #7a52a6;
+  --score-teal: #23706e;
+
+  /* One corner language. Every plate pairs a tight corner with a swept one;
+     only the sweep scales with the plate, so the whole rig reads as one set. */
+  --corner-tight: 9px;
+  --corner-swept-sm: 21px;
+  --corner-swept-md: 28px;
+  --corner-swept-lg: 33px;
+  --corner-chamfer: 3px;
+
+  /* One elevation language: a hard ledge that reads as printed-card thickness
+     plus a soft ground shadow. The -sm pair is the same shape, scaled down for
+     lighter set pieces so they sit in the same world as the big plates. */
+  --lift-ledge: 0 4px 0 rgba(32, 41, 66, 0.45);
+  --lift-drop: 0 10px 10px rgba(0, 0, 0, 0.26);
+  --lift-ledge-sm: 0 3px 0 rgba(32, 41, 66, 0.38);
+  --lift-drop-sm: 0 6px 6px rgba(0, 0, 0, 0.22);
 }
 
 * {
@@ -36,8 +57,10 @@ body {
 }
 
 .player.container {
-  --frame-outer-radius: 10px 28px;
-  --frame-inner-radius: 5px 22px;
+  /* Inner radius is derived, not hand-picked: ::before insets by 6px, so the
+     inner curve has to shed exactly 6px to stay concentric with the frame. */
+  --frame-outer-radius: var(--corner-tight) var(--corner-swept-md);
+  --frame-inner-radius: calc(var(--corner-tight) - 6px) calc(var(--corner-swept-md) - 6px);
   position: absolute;
   top: 59px;
   width: 548px;
@@ -62,9 +85,12 @@ body {
 }
 
 .player.container::after {
+  /* Same ledge + ground shadow as --lift-ledge/--lift-drop. Spelled out
+     because filter: drop-shadow() follows the rounded silhouette and cannot
+     take a box-shadow custom property. */
   filter:
-    drop-shadow(0 4px 0 rgba(32, 41, 66, 0.55))
-    drop-shadow(0 10px 9px rgba(0, 0, 0, 0.28));
+    drop-shadow(0 4px 0 rgba(32, 41, 66, 0.45))
+    drop-shadow(0 10px 10px rgba(0, 0, 0, 0.26));
 }
 
 .player.container::before,
@@ -81,7 +107,7 @@ body {
   background:
     radial-gradient(circle at 20% 35%, rgba(255, 255, 255, 0.22) 0 1.5px, transparent 2.1px),
     radial-gradient(circle at 74% 68%, rgba(32, 41, 66, 0.07) 0 1.5px, transparent 2.2px),
-    repeating-linear-gradient(8deg, transparent 0 8px, rgba(32, 41, 66, 0.025) 8px 9px),
+    repeating-linear-gradient(8deg, transparent 0 8px, rgba(32, 41, 66, 0.06) 8px 9px),
     linear-gradient(180deg, var(--sand-light) 0%, var(--sand) 56%, var(--sand-dark) 100%);
   background-size: 29px 26px, 35px 32px, auto, auto;
 }
@@ -92,8 +118,8 @@ body {
 }
 
 .p2.player.container {
-  --frame-outer-radius: 28px 10px;
-  --frame-inner-radius: 22px 5px;
+  --frame-outer-radius: var(--corner-swept-md) var(--corner-tight);
+  --frame-inner-radius: calc(var(--corner-swept-md) - 6px) calc(var(--corner-tight) - 6px);
   right: 354px;
   padding: 0 24px 0 104px;
   flex-direction: row-reverse;
@@ -170,7 +196,7 @@ body {
 }
 
 .score::before {
-  background: var(--purple);
+  background: var(--score-purple);
 }
 
 .p1 .score {
@@ -260,11 +286,12 @@ body {
   color: var(--deep);
   background: rgba(241, 211, 160, 0.96);
   border: 3px solid var(--deep);
-  border-radius: 9px 21px;
+  border-radius: var(--corner-tight) var(--corner-swept-sm);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.34),
-    0 4px 4px rgba(0, 0, 0, 0.22);
-  font-size: 15px;
+    var(--lift-ledge-sm),
+    var(--lift-drop-sm);
+  font-size: 16px;
   font-weight: 800;
   letter-spacing: 0.3px;
 }
@@ -289,7 +316,7 @@ body {
   width: 24px;
   height: 16px;
   object-fit: cover;
-  border-radius: 2px;
+  border-radius: var(--corner-chamfer);
 }
 
 .twitter_logo::before {
@@ -376,22 +403,36 @@ body {
   color: var(--sand);
   background: var(--purple);
   border: 4px solid var(--deep);
-  border-radius: 8px 21px;
+  border-radius: var(--corner-tight) var(--corner-swept-sm);
   box-shadow:
     inset 0 0 0 1px rgba(241, 211, 160, 0.35),
-    0 4px 3px rgba(0, 0, 0, 0.25);
+    var(--lift-ledge-sm),
+    var(--lift-drop-sm);
   transform: translateX(-50%);
   text-transform: uppercase;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 900;
   letter-spacing: 1px;
 }
 
+/* TSH's FitText() samples the box width once, then shrinks the font until the
+   text fits that sample. With flex-basis:auto the box width is derived from the
+   text, so every shrink step also shrinks the box and the sample goes stale --
+   the loop exits while the text still overflows. Sizing from a zero basis makes
+   these boxes depend only on the plate, so FitText's sample stays valid. */
 .tournament_name,
 .event_name {
+  flex: 1 1 0;
   min-width: 0;
   height: 100%;
   overflow: hidden;
+}
+
+/* TSH tags an empty field with .text_empty; without this the blank half would
+   still claim its share of the plate. */
+.tournament_name.text_empty,
+.event_name.text_empty {
+  flex-grow: 0;
 }
 
 .tournament_name > .text,
@@ -424,12 +465,12 @@ body {
   color: var(--deep);
   background: var(--sand);
   border: 6px solid var(--deep);
-  border-radius: 9px 33px 9px 33px;
+  border-radius: var(--corner-tight) var(--corner-swept-lg);
   box-shadow:
     inset 0 0 0 5px var(--brass),
     inset 0 0 0 8px var(--sand),
-    0 4px 0 rgba(32, 41, 66, 0.45),
-    0 10px 10px rgba(0, 0, 0, 0.26);
+    var(--lift-ledge),
+    var(--lift-drop);
 }
 
 .anchor-icon {
